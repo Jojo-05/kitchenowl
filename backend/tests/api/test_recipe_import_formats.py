@@ -40,6 +40,7 @@ def _make_gzip_json(payload: dict) -> bytes:
 
 
 def _get_recipe(household_id: int, name: str) -> Recipe:
+    db.session.expire_all()
     return Recipe.query.filter_by(household_id=household_id, name=name).one()
 
 
