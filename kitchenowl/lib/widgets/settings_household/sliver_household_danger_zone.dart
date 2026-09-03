@@ -9,6 +9,7 @@ import 'package:kitchenowl/cubits/household_add_update/household_update_cubit.da
 import 'package:kitchenowl/helpers/named_bytearray.dart';
 import 'package:kitchenowl/helpers/share.dart';
 import 'package:kitchenowl/kitchenowl.dart';
+import 'package:kitchenowl/models/import_settings.dart';
 import 'package:kitchenowl/models/recipe_import_result.dart';
 
 import 'import_settings_dialog.dart';
