@@ -50,6 +50,7 @@ HEALTHCHECK --interval=60s --timeout=3s CMD uwsgi_curl localhost:5000 /api/healt
 ENV STORAGE_PATH='/data'
 ENV JWT_SECRET_KEY='PLEASE_CHANGE_ME'
 ENV DEBUG='False'
+ENV MAX_CONTENT_LENGTH_MB='2048'
 
 RUN chmod u+x ./entrypoint.sh
 

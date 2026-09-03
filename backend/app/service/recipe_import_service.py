@@ -455,6 +455,10 @@ def _run_recipe_import_job(
             complete=False,
             running=True,
         )
+        try:
+            gevent.sleep(0.01)
+        except Exception:
+            time.sleep(0.01)
 
         imported = 0
         skipped = 0
@@ -464,6 +468,19 @@ def _run_recipe_import_job(
             action = decisions.get(import_id, "copy")
             if action == "skip":
                 skipped += 1
+                _set_import_job(
+                    token,
+                    detected=len(recipes),
+                    imported=imported,
+                    skipped=skipped,
+                    failed=failed,
+                    complete=False,
+                    running=True,
+                )
+                try:
+                    gevent.sleep(0.01)
+                except Exception:
+                    time.sleep(0.01)
                 continue
 
             try:
@@ -513,6 +530,10 @@ def _run_recipe_import_job(
                 complete=False,
                 running=True,
             )
+            try:
+                gevent.sleep(0.01)
+            except Exception:
+                time.sleep(0.01)
 
         try:
             shutil.rmtree(base_dir)

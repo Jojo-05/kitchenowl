@@ -13,6 +13,7 @@ from app.models import Household, Recipe, RecipeTags, Tag
 from app.service.recipe_import_service import (
     commit_recipe_import,
     preview_recipe_import,
+    get_recipe_import_job,
 )
 
 
@@ -232,3 +233,54 @@ def test_recipe_import_overwrite_keeps_existing_tags_without_error(client):
     recipe = _get_recipe(household.id, "Overwrite Me")
     assert recipe.description == "Updated recipe"
     assert [tag.tag.name for tag in recipe.tags] == ["Dinner"]
+
+
+def test_recipe_import_progress_tracking_records_individual_updates(client):
+    from app.config import DEFAULT_MAX_CONTENT_LENGTH_MB, app
+
+    assert DEFAULT_MAX_CONTENT_LENGTH_MB == 2048
+    assert app.config["MAX_CONTENT_LENGTH"] == 2048 * 1024 * 1024
+
+    household = _create_household("Progress Tracking Test")
+    payloads = [
+        {"name": f"Recipe {i}", "description": f"Desc {i}"} for i in range(3)
+    ]
+    archive = _make_zip(
+        {f"recipe_{i}.json": json.dumps(p).encode("utf-8") for i, p in enumerate(payloads)}
+    )
+
+    preview = preview_recipe_import(household.id, archive, "progress.zip")
+    assert len(preview["recipes"]) == 3
+
+    recorded_states = []
+
+    from app.service.recipe_import_service import _set_import_job as orig_set
+
+    def tracking_set(token, **state):
+        orig_set(token, **state)
+        recorded_states.append(dict(state))
+
+    with patch("app.service.recipe_import_service._set_import_job", side_effect=tracking_set):
+
+        # import recipe 0 as copy, skip recipe 1, import recipe 2 as copy
+        decisions = {
+            preview["recipes"][0]["import_id"]: "copy",
+            preview["recipes"][1]["import_id"]: "skip",
+            preview["recipes"][2]["import_id"]: "copy",
+        }
+        result = commit_recipe_import(household.id, preview["token"], decisions)
+
+        assert result["imported"] == 2
+        assert result["skipped"] == 1
+        assert result["failed"] == 0
+
+        # Verify incremental updates occurred
+        # 1. Initial start state: imported=0, skipped=0, failed=0, running=True
+        # 2. Recipe 0: imported=1, skipped=0, running=True
+        # 3. Recipe 1 (skip): imported=1, skipped=1, running=True
+        # 4. Recipe 2: imported=2, skipped=1, running=True
+        # 5. Final complete state: complete=True, running=False
+        assert any(s.get("imported") == 1 and s.get("skipped") == 0 for s in recorded_states)
+        assert any(s.get("imported") == 1 and s.get("skipped") == 1 for s in recorded_states)
+        assert any(s.get("imported") == 2 and s.get("skipped") == 1 for s in recorded_states)
+

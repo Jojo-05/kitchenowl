@@ -342,7 +342,7 @@ class _SliverHouseholdDangerZoneState
                       );
                       while (!current.complete) {
                         await Future<void>.delayed(
-                          const Duration(milliseconds: 500),
+                          const Duration(milliseconds: 300),
                         );
                         final status =
                             await householdUpdateCubit.getRecipeImportStatus(

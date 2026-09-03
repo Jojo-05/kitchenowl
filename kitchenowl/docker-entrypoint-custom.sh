@@ -15,6 +15,11 @@ if [ ! -f "/proc/net/if_inet6" ]; then
     sed -i '/::/d' /etc/nginx/templates/default.conf.template
 fi
 
+export MAX_CONTENT_LENGTH_MB="${MAX_CONTENT_LENGTH_MB:-2048}"
+if [ "${MAX_CONTENT_LENGTH_MB}" = "0" ]; then
+    sed -i 's/\${MAX_CONTENT_LENGTH_MB}M/0/g' /etc/nginx/templates/default.conf.template
+fi
+
 # patch the web base href if requested
 if [ ! -z $BASE_HREF ]; then
     if [[ $BASE_HREF == *"#"* ]]; then

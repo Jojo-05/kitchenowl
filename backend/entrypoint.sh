@@ -24,6 +24,7 @@ if [ ! -z $BASE_HREF ] && [ -f "$INDEX_HTML" ]; then
     sed -i "s#<base href=\"/\">#<base href=\"${BASE_HREF}\">#g" "$INDEX_HTML"
 fi
 
+export MAX_CONTENT_LENGTH_MB="${MAX_CONTENT_LENGTH_MB:-2048}"
 mkdir -p $STORAGE_PATH/upload
 flask db upgrade
 if [ "${SKIP_UPGRADE_DEFAULT_ITEMS}" != "true" ] && [ "${SKIP_UPGRADE_DEFAULT_ITEMS}" != "True" ]; then
