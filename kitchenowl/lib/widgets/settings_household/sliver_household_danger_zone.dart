@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kitchenowl/cubits/household_add_update/household_update_cubit.dart';
@@ -191,78 +191,39 @@ class _SliverHouseholdDangerZoneState
                     Expanded(
                       child: LoadingElevatedButton(
                         onPressed: () async {
-                          final file = await FilePicker.pickFiles(
-                            allowMultiple: false,
+                          final file = await FilePicker.pickFile(
                             allowedExtensions: ['json'],
                             dialogTitle: 'Please select a file to import:',
                             type: FileType.custom,
-                            withData: true,
                           );
-                          if (file == null || file.files.first.bytes == null) {
-                            return;
-                          }
+                          if (file != null && file.name.isNotEmpty) {
+                            try {
+                              dynamic content = jsonDecode(
+                                String.fromCharCodes(await file.readAsBytes()),
+                              );
+                              if (content == null ||
+                                  content is! Map<String, dynamic>) return;
 
-                          try {
-                            final decoded = jsonDecode(
-                              String.fromCharCodes(file.files.first.bytes!),
-                            );
-                            if (decoded is! Map<String, dynamic>) {
+                              ImportSettings? settings =
+                                  await askForImportSettings(context: context);
+
+                              if (settings == null) return;
+
                               showSnackbar(
                                 context: context,
-                                content: const Text(
-                                  'Selected file is not a valid household export.',
+                                content: Text(
+                                  AppLocalizations.of(context)!.importStartedHint,
                                 ),
                                 width: null,
                               );
-                              return;
-                            }
 
-                            final settings =
-                                await askForImportSettings(context: context);
-                            if (settings == null) return;
-
-                            if (!settings.items &&
-                                !settings.recipes &&
-                                !settings.expenses &&
-                                !settings.shoppinglists) {
-                              showSnackbar(
-                                context: context,
-                                content: const Text(
-                                  'Select at least one section to import.',
-                                ),
-                                width: null,
+                              return await BlocProvider.of<HouseholdUpdateCubit>(
+                                      context)
+                                  .importHousehold(
+                                content,
+                                settings,
                               );
-                              return;
-                            }
-
-                            showSnackbar(
-                              context: context,
-                              content: Text(
-                                AppLocalizations.of(context)!.importStartedHint,
-                              ),
-                              width: null,
-                            );
-
-                            await BlocProvider.of<HouseholdUpdateCubit>(
-                              context,
-                            ).importHousehold(
-                              decoded,
-                              settings,
-                            );
-                          } on FormatException {
-                            showSnackbar(
-                              context: context,
-                              content: const Text(
-                                'Selected file is not valid JSON.',
-                              ),
-                              width: null,
-                            );
-                          } catch (_) {
-                            showSnackbar(
-                              context: context,
-                              content: const Text('Import failed.'),
-                              width: null,
-                            );
+                            } catch (_) {}
                           }
                         },
                         child: Text(AppLocalizations.of(context)!.import),
@@ -273,22 +234,20 @@ class _SliverHouseholdDangerZoneState
                 const SizedBox(height: 8),
                 LoadingElevatedButton(
                   onPressed: () async {
-                    final file = await FilePicker.pickFiles(
-                      allowMultiple: false,
+                    final file = await FilePicker.pickFile(
                       allowedExtensions: ['json', 'zip'],
                       dialogTitle: AppLocalizations.of(context)!
                           .recipeImportChooseFile,
                       type: FileType.custom,
-                      withData: true,
                     );
-                    if (file == null || file.files.first.bytes == null) return;
+                    if (file == null || file.name.isEmpty) return;
 
                     final preview =
                         await BlocProvider.of<HouseholdUpdateCubit>(context)
                             .previewRecipeImport(
                       NamedByteArray(
-                        file.files.first.name,
-                        file.files.first.bytes!,
+                        file.name,
+                        await file.readAsBytes(),
                       ),
                     );
 

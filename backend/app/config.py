@@ -46,7 +46,7 @@ def get_secret(env_var: str, default: str = None) -> str | None:
 
 
 MIN_FRONTEND_VERSION = 71
-BACKEND_VERSION = 123
+BACKEND_VERSION = 124
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(APP_DIR)
@@ -145,6 +145,7 @@ SUPPORTED_LANGUAGES = {
     "tr": "Türkçe",
     "uk": "Українська",
     "zh_Hans": "简化字",
+    "zh_Hant": "繁體字",
 }
 
 Flask.json_provider_class = KitchenOwlJSONProvider
