@@ -262,9 +262,16 @@ class Recipe(Model, DbModelAuthorizeMixin):
         )
 
     @classmethod
-    def find_by_name(cls, household_id: int, name: str) -> Self | None:
+    def find_by_name(
+        cls, household_id: int, name: str, case_sensitive: bool = False
+    ) -> Self | None:
+        if case_sensitive:
+            return cls.query.filter(
+                cls.household_id == household_id, cls.name == name
+            ).first()
         return cls.query.filter(
-            cls.household_id == household_id, cls.name == name
+            cls.household_id == household_id,
+            func.lower(cls.name) == func.lower(name.strip()),
         ).first()
 
     @classmethod

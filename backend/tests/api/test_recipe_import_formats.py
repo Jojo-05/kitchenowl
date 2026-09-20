@@ -329,4 +329,41 @@ def test_recipe_import_yields_sanitized_to_int(client):
     assert recipe.yields == 4
 
 
+def test_recipe_import_case_insensitive_overwrite(client):
+    household = _create_household("Case Overwrite Household")
+    existing = Recipe(
+        household_id=household.id,
+        name="Pizza Margherita",
+        description="Original pizza",
+    ).save()
+
+    archive = _make_zip(
+        {
+            "recipe.json": json.dumps(
+                {
+                    "name": "pizza margherita",
+                    "description": "Overwritten pizza description",
+                }
+            ).encode("utf-8")
+        }
+    )
+    preview = preview_recipe_import(household.id, archive, "case.zip")
+    assert len(preview["duplicates"]) == 1
+
+    result = commit_recipe_import(
+        household.id,
+        preview["token"],
+        {preview["recipes"][0]["import_id"]: "overwrite"},
+    )
+    assert result["imported"] == 1
+    assert result["failed"] == 0
+
+    db.session.expire_all()
+    all_recipes = Recipe.query.filter_by(household_id=household.id).all()
+    assert len(all_recipes) == 1
+    assert all_recipes[0].id == existing.id
+    assert all_recipes[0].description == "Overwritten pizza description"
+
+
+
 
