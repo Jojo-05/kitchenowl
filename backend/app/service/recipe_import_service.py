@@ -170,10 +170,32 @@ def _collect_zip_images(entries: list[str]) -> dict[str, list[str]]:
 
 def _set_import_job(token: str, **state: Any) -> None:
     IMPORT_JOB_STATE[token] = state
+    if len(IMPORT_JOB_STATE) > 500:
+        oldest_tokens = list(IMPORT_JOB_STATE.keys())[:100]
+        for t in oldest_tokens:
+            IMPORT_JOB_STATE.pop(t, None)
+    base_dir = os.path.join(IMPORT_TMP_FOLDER, token)
+    if os.path.isdir(base_dir):
+        job_file = os.path.join(base_dir, "job.json")
+        try:
+            with open(job_file, "w", encoding="utf-8") as f:
+                json.dump(state, f)
+        except Exception:
+            pass
 
 
 def get_recipe_import_job(token: str) -> dict[str, Any] | None:
     job = IMPORT_JOB_STATE.get(token)
+    if not job:
+        base_dir = os.path.join(IMPORT_TMP_FOLDER, token)
+        job_file = os.path.join(base_dir, "job.json")
+        if os.path.isfile(job_file):
+            try:
+                with open(job_file, "r", encoding="utf-8") as f:
+                    job = json.load(f)
+                    IMPORT_JOB_STATE[token] = job
+            except Exception:
+                job = None
     if not job:
         return None
     return dict(job)
@@ -555,9 +577,12 @@ def _run_recipe_import_job(
                 time.sleep(0.01)
 
         try:
-            shutil.rmtree(base_dir)
+            if os.path.exists(images_dir):
+                shutil.rmtree(images_dir)
+            if os.path.exists(recipes_path):
+                os.remove(recipes_path)
         except Exception:
-            app.logger.warning("Failed to cleanup recipe import temp dir")
+            app.logger.warning("Failed to cleanup recipe import temp images")
 
         _set_import_job(
             token,
