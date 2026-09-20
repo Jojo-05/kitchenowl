@@ -19,7 +19,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      - JWT_SECRET_KEY=a5kAjs5duiQ5whIdh145asdG86wdgh4erg
+      - JWT_SECRET_KEY=PLEASE_CHANGE_ME
       - MAX_CONTENT_LENGTH_MB=2048
       - FRONT_URL=http://localhost
     volumes:
