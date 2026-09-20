@@ -43,8 +43,40 @@ def _parse_minutes(value: Any) -> int | None:
     if value is None:
         return None
     if isinstance(value, (int, float)):
-        return int(value)
-    match = re.search(r"\d+", str(value))
+        return int(round(value))
+
+    s = str(value).strip()
+    if not s:
+        return None
+
+    # Check ISO 8601 format: PT1H30M, PT2H, PT45M, P0DT1H30M, etc.
+    iso_match = re.match(
+        r"^P(?:.*?T)?(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?$",
+        s,
+        re.IGNORECASE,
+    )
+    if iso_match and (iso_match.group(1) or iso_match.group(2) or iso_match.group(3)):
+        hours = float(iso_match.group(1)) if iso_match.group(1) else 0.0
+        minutes = float(iso_match.group(2)) if iso_match.group(2) else 0.0
+        seconds = float(iso_match.group(3)) if iso_match.group(3) else 0.0
+        total = int(round(hours * 60 + minutes + seconds / 60))
+        if total > 0:
+            return total
+
+    # Check natural language: e.g. "1 hr 30 min", "2 hours", "1h 30m"
+    hours_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b", s, re.IGNORECASE)
+    minutes_match = re.search(
+        r"(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|m)\b", s, re.IGNORECASE
+    )
+    if hours_match or minutes_match:
+        hours = float(hours_match.group(1)) if hours_match else 0.0
+        minutes = float(minutes_match.group(1)) if minutes_match else 0.0
+        total = int(round(hours * 60 + minutes))
+        if total > 0:
+            return total
+
+    # Fallback to pure digits
+    match = re.search(r"\d+", s)
     if match:
         return int(match.group(0))
     return None
@@ -53,8 +85,8 @@ def _parse_minutes(value: Any) -> int | None:
 def parse_time(payload: dict[str, Any], *keys: str) -> int | None:
     for k in keys:
         val = payload.get(k)
-        if val:
-            res = normalize_int(val) or _parse_minutes(val)
+        if val is not None and val != "":
+            res = _parse_minutes(val)
             if res is not None:
                 return res
     return None

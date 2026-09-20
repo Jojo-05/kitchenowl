@@ -411,6 +411,19 @@ def test_recipe_import_real_paprika_format(client):
     assert _read_uploaded_photo(recipe.photo) == PNG_ONE
 
 
+def test_recipe_import_duration_formats(client):
+    from app.service.importRecipes.utils import _parse_minutes
+
+    assert _parse_minutes("PT1H30M") == 90
+    assert _parse_minutes("PT2H") == 120
+    assert _parse_minutes("PT45M") == 45
+    assert _parse_minutes("1 hour 15 mins") == 75
+    assert _parse_minutes("2 hrs") == 120
+    assert _parse_minutes("40") == 40
+    assert _parse_minutes(35) == 35
+
+
+
 
 
 
