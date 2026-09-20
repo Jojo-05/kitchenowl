@@ -495,19 +495,26 @@ def _run_recipe_import_job(
                         recipe["photo"] = filename
                 if recipe.get("photo_temps"):
                     resolved_photos = []
+                    if recipe.get("photo"):
+                        resolved_photos.append(recipe["photo"])
                     for photo_temp in recipe["photo_temps"]:
                         image_path = os.path.join(images_dir, photo_temp)
                         with open(image_path, "rb") as handle:
                             file_bytes = handle.read()
                         filename = _store_image_bytes(file_bytes, photo_temp, user)
-                        if filename:
+                        if filename and filename not in resolved_photos:
                             resolved_photos.append(filename)
                     if resolved_photos:
                         recipe["photos"] = resolved_photos
+                        if not recipe.get("photo"):
+                            recipe["photo"] = resolved_photos[0]
                 elif recipe.get("photo"):
-                    recipe["photo"] = file_has_access_or_download(
-                        recipe["photo"], user=user
-                    )
+                    if not recipe.get("photo_temp"):
+                        recipe["photo"] = file_has_access_or_download(
+                            recipe["photo"], user=user
+                        )
+                    if recipe.get("photo"):
+                        recipe["photos"] = [recipe["photo"]]
                 elif recipe.get("photo") is None:
                     recipe.pop("photo", None)
 

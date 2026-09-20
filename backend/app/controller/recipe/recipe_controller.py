@@ -103,11 +103,12 @@ def addRecipe(args, household_id):
     if "visibility" in args:
         recipe.visibility = RecipeVisibility(args["visibility"])
     if "photos" in args:
-        recipe.photos = [
+        resolved_photos = [
             file_has_access_or_download(photo, user=current_user)
             for photo in args["photos"]
             if photo
         ]
+        recipe.photos = [p for p in resolved_photos if p]
         recipe.photo = recipe.photos[0] if recipe.photos else None
     elif "photo" in args:
         recipe.photo = file_has_access_or_download(args["photo"], recipe.photo)
@@ -164,11 +165,12 @@ def updateRecipe(args, id):  # noqa: C901
     if "visibility" in args:
         recipe.visibility = RecipeVisibility(args["visibility"])
     if "photos" in args:
-        recipe.photos = [
+        resolved_photos = [
             file_has_access_or_download(photo, user=current_user)
             for photo in args["photos"]
             if photo
         ]
+        recipe.photos = [p for p in resolved_photos if p]
         recipe.photo = recipe.photos[0] if recipe.photos else None
     elif "photo" in args:
         recipe.photo = file_has_access_or_download(args["photo"], recipe.photo)

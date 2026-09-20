@@ -103,10 +103,14 @@ def importRecipe(
             file_has_access_or_download(photo, user=user) for photo in extra_photos
         ]
         recipe.photos = [photo for photo in resolved_photos if photo]
-        if not recipe.photo and recipe.photos:
+        if recipe.photo and recipe.photo not in recipe.photos:
+            recipe.photos.insert(0, recipe.photo)
+        elif not recipe.photo and recipe.photos:
             recipe.photo = recipe.photos[0]
     elif "photos" in args:
-        recipe.photos = []
+        recipe.photos = [recipe.photo] if recipe.photo else []
+    elif recipe.photo:
+        recipe.photos = [recipe.photo]
 
     recipe.save()
 

@@ -91,9 +91,8 @@ class Recipe extends Model {
       prepTime: map['prep_time'] ?? 0,
       yields: map['yields'] ?? 0,
       source: map['source'] ?? '',
-      image: (additionalImages.isNotEmpty
-              ? additionalImages.first
-              : map['photo'])
+      image: (map['photo'] ??
+              (additionalImages.isNotEmpty ? additionalImages.first : null))
           ?.toString(),
       imageHash: map['photo_hash'],
       additionalImages: additionalImages,
