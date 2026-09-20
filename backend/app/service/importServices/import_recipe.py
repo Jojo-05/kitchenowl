@@ -16,10 +16,34 @@ def _to_reference(value: str) -> str:
     )
 
 
+_COMMON_STOP_WORDS = {
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "in",
+    "on",
+    "at",
+    "to",
+    "of",
+    "for",
+    "with",
+    "by",
+    "as",
+    "is",
+    "it",
+}
+
+
 def _apply_ingredient_refs(description: str, item_names: list[str]) -> str:
     if not description or not item_names:
         return description
-    names = [n for n in item_names if n]
+    names = [
+        n.strip()
+        for n in item_names
+        if n and len(n.strip()) >= 3 and n.strip().lower() not in _COMMON_STOP_WORDS
+    ]
     if not names:
         return description
     pattern = "|".join(

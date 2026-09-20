@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:fraction/fraction.dart';
@@ -8,6 +8,13 @@ import 'package:kitchenowl/models/item.dart';
 import 'package:kitchenowl/models/recipe.dart';
 import 'package:kitchenowl/widgets/item_chip.dart';
 import 'package:markdown/markdown.dart' as md;
+import 'package:material_ui/material_ui.dart';
+
+String cleanRecipeItemName(String name) {
+  return name.toLowerCase().replaceAll(
+      RegExp(r"""\n|\.|\(|\)|\\|\/|\?|\*|\+|,|!|%|$|#|@|^|;|:|"|=|~|{"""),
+      "");
+}
 
 class RecipeItemMarkdownBuilder extends MarkdownElementBuilder {
   final List<RecipeItem> items;
@@ -24,9 +31,13 @@ class RecipeItemMarkdownBuilder extends MarkdownElementBuilder {
   ) {
     if ((parentStyle?.fontSize ?? 0) > 14) return null;
 
-    RecipeItem item = items.firstWhere(
-      (e) => e.name.toLowerCase() == element.textContent,
-    );
+    final item = items
+        .where((e) => cleanRecipeItemName(e.name) == element.textContent)
+        .firstOrNull;
+    if (item == null) {
+      return Text(element.textContent, style: parentStyle);
+    }
+
     String? overridenDescription = element.attributes["description"];
     if (overridenDescription != null && itemScaledFactor != null) {
       overridenDescription =
@@ -51,11 +62,7 @@ class RecipeCubitItemMarkdownBuilder extends MarkdownElementBuilder {
 
   RecipeCubitItemMarkdownBuilder({required this.cubit});
 
-  String cleanItemName(String name) {
-    return name.toLowerCase().replaceAll(
-        RegExp(r"""\n|\.|\(|\)|\\|\/|\?|\*|\+|,|!|%|$|#|@|^|;|:|"|=|~|{"""),
-        "");
-  }
+  String cleanItemName(String name) => cleanRecipeItemName(name);
 
   @override
   Widget? visitElementAfterWithContext(
@@ -72,18 +79,24 @@ class RecipeCubitItemMarkdownBuilder extends MarkdownElementBuilder {
           alignment: PlaceholderAlignment.middle,
           child: BlocBuilder<RecipeCubit, RecipeState>(
             bloc: cubit,
-            buildWhen: (previous, current) =>
-                previous.dynamicRecipe.items.firstWhere(
-                      (e) => cleanItemName(e.name) == element.textContent,
-                    ) !=
-                    current.dynamicRecipe.items.firstWhere(
-                      (e) => cleanItemName(e.name) == element.textContent,
-                    ) ||
-                previous.selectedYields != current.selectedYields,
+            buildWhen: (previous, current) {
+              final prevItem = previous.dynamicRecipe.items
+                  .where((e) => cleanRecipeItemName(e.name) == element.textContent)
+                  .firstOrNull;
+              final currItem = current.dynamicRecipe.items
+                  .where((e) => cleanRecipeItemName(e.name) == element.textContent)
+                  .firstOrNull;
+              return prevItem != currItem ||
+                  previous.selectedYields != current.selectedYields;
+            },
             builder: (context, state) {
-              RecipeItem item = state.dynamicRecipe.items.firstWhere(
-                (e) => cleanItemName(e.name) == element.textContent,
-              );
+              final item = state.dynamicRecipe.items
+                  .where((e) => cleanRecipeItemName(e.name) == element.textContent)
+                  .firstOrNull;
+
+              if (item == null) {
+                return Text(element.textContent, style: parentStyle);
+              }
 
               String? overridenDescription = element.attributes["description"];
               if (overridenDescription != null &&
@@ -120,11 +133,9 @@ class RecipeExplicitItemMarkdownSyntax extends md.InlineSyntax {
 
   @override
   bool onMatch(md.InlineParser parser, Match match) {
-    final name = match[1]!.replaceAll("_", " ").trim().toLowerCase();
+    final name = cleanRecipeItemName(match[1]!.replaceAll("_", " ").trim());
     if (!recipe.items
-        .map((e) => e.name.toLowerCase().replaceAll(
-            RegExp(r"""\n|\.|\(|\)|\\|\/|\?|\*|\+|,|!|%|$|#|@|^|;|:|"|=|~|{"""),
-            ""))
+        .map((e) => cleanRecipeItemName(e.name))
         .contains(name)) {
       parser.advanceBy(1);
 
@@ -132,8 +143,9 @@ class RecipeExplicitItemMarkdownSyntax extends md.InlineSyntax {
     }
 
     final node = md.Element.text('recipeItem', name);
-    if (match.group(3) != null)
+    if (match.group(3) != null) {
       node.attributes["description"] = match.group(3)!;
+    }
     parser.addNode(node);
 
     return true;
