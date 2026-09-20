@@ -73,30 +73,40 @@ class _RecipeImportDialogState extends State<_RecipeImportDialog> {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Text(
-                    AppLocalizations.of(context)!
-                        .recipeImportApplyAllDuplicates,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                Text(
+                  AppLocalizations.of(context)!
+                      .recipeImportApplyAllDuplicates,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
-                TextButton(
-                  onPressed: () => _setAllDuplicateDecisions(_actionSkip),
-                  child:
-                      Text(AppLocalizations.of(context)!.recipeImportActionSkip),
-                ),
-                TextButton(
-                  onPressed: () => _setAllDuplicateDecisions(_actionOverwrite),
-                  child: Text(
-                    AppLocalizations.of(context)!.recipeImportActionOverwrite,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => _setAllDuplicateDecisions(_actionCopy),
-                  child:
-                      Text(AppLocalizations.of(context)!.recipeImportActionCopy),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    TextButton(
+                      onPressed: () => _setAllDuplicateDecisions(_actionSkip),
+                      child: Text(
+                        AppLocalizations.of(context)!.recipeImportActionSkip,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          _setAllDuplicateDecisions(_actionOverwrite),
+                      child: Text(
+                        AppLocalizations.of(context)!
+                            .recipeImportActionOverwrite,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => _setAllDuplicateDecisions(_actionCopy),
+                      child: Text(
+                        AppLocalizations.of(context)!.recipeImportActionCopy,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

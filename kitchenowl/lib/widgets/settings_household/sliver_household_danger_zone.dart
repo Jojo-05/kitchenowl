@@ -11,6 +11,8 @@ import 'package:kitchenowl/helpers/share.dart';
 import 'package:kitchenowl/kitchenowl.dart';
 import 'package:kitchenowl/models/import_settings.dart';
 import 'package:kitchenowl/models/recipe_import_result.dart';
+import 'package:kitchenowl/services/transaction_handler.dart';
+import 'package:kitchenowl/services/transactions/recipe.dart';
 
 import 'import_settings_dialog.dart';
 import 'recipe_import_dialog.dart';
@@ -302,7 +304,7 @@ class _SliverHouseholdDangerZoneState
                       );
                       while (!current.complete) {
                         await Future<void>.delayed(
-                          const Duration(milliseconds: 300),
+                          const Duration(milliseconds: 1500),
                         );
                         final status =
                             await householdUpdateCubit.getRecipeImportStatus(
@@ -331,6 +333,14 @@ class _SliverHouseholdDangerZoneState
                           current,
                           preview.recipes.length,
                         );
+                      }
+                      if (current.complete) {
+                        await TransactionHandler.getInstance().runTransaction(
+                          TransactionRecipeGetRecipes(
+                            household: householdUpdateCubit.household,
+                          ),
+                        );
+                        await householdUpdateCubit.refresh();
                       }
                     } else {
                       _RecipeImportProgressTracker.clear();
