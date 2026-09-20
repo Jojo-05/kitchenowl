@@ -236,7 +236,7 @@ class _SliverHouseholdDangerZoneState
                 LoadingElevatedButton(
                   onPressed: () async {
                     final file = await FilePicker.pickFile(
-                      allowedExtensions: ['json', 'zip'],
+                      allowedExtensions: ['json', 'zip', 'paprikarecipes'],
                       dialogTitle: AppLocalizations.of(context)!
                           .recipeImportChooseFile,
                       type: FileType.custom,

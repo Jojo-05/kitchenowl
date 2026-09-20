@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import io
 import json
 import gzip
@@ -351,6 +352,17 @@ def preview_recipe_import(
                 recipe.pop("photo", None)
 
     for recipe in recipes:
+        if recipe.get("photo_data"):
+            try:
+                raw_bytes = base64.b64decode(recipe.pop("photo_data"))
+                fname = f"{uuid.uuid4()}_photo.jpg"
+                path = os.path.join(images_dir, fname)
+                with open(path, "wb") as handle:
+                    handle.write(raw_bytes)
+                recipe["photo_temp"] = fname
+            except Exception:
+                recipe.pop("photo_data", None)
+
         recipe["import_id"] = uuid.uuid4().hex
         recipe.pop("import_source_dir", None)
 

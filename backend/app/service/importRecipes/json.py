@@ -17,7 +17,10 @@ def _normalize_recipe(raw: dict[str, Any]) -> dict[str, Any] | None:
 
     description = normalize_text(raw.get("description") or "")
     instructions = (
-        raw.get("recipeInstructions") or raw.get("instructions") or raw.get("method")
+        raw.get("recipeInstructions")
+        or raw.get("instructions")
+        or raw.get("directions")
+        or raw.get("method")
     )
     if isinstance(instructions, list):
         steps = []
@@ -72,6 +75,9 @@ def _normalize_recipe(raw: dict[str, Any]) -> dict[str, Any] | None:
     )
     if photo:
         recipe["photo"] = photo
+    photo_data = raw.get("photo_data") or raw.get("photo_large")
+    if photo_data and isinstance(photo_data, str) and len(photo_data.strip()) > 20:
+        recipe["photo_data"] = photo_data.strip()
     photos = [
         normalize_text(photo)
         for photo in (raw.get("photos") or raw.get("images") or [])

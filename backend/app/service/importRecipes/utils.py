@@ -61,7 +61,9 @@ def parse_time(payload: dict[str, Any], *keys: str) -> int | None:
 
 
 def normalize_items(value: Any) -> list[dict[str, Any]]:
-    if not isinstance(value, list):
+    if isinstance(value, str):
+        value = [line.strip() for line in value.split("\n") if line.strip()]
+    elif not isinstance(value, list):
         return []
 
     items: list[dict[str, Any]] = []

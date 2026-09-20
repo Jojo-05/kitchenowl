@@ -365,5 +365,52 @@ def test_recipe_import_case_insensitive_overwrite(client):
     assert all_recipes[0].description == "Overwritten pizza description"
 
 
+def test_recipe_import_real_paprika_format(client):
+    import base64
+
+    household = _create_household("Real Paprika import")
+    archive = _make_zip(
+        {
+            "Gnocchi.paprikarecipe": _make_gzip_json(
+                {
+                    "name": "Paprika Gnocchi",
+                    "directions": "Boil water.\nCook gnocchi for 3 mins.",
+                    "ingredients": "500g gnocchi\n50g parmesan\n2 tbsp butter",
+                    "photo_data": base64.b64encode(PNG_ONE).decode("ascii"),
+                }
+            ),
+        }
+    )
+
+    preview = preview_recipe_import(household.id, archive, "recipes.paprikarecipes")
+    assert [r["name"] for r in preview["recipes"]] == ["Paprika Gnocchi"]
+
+    def _save_image_bytes(file_bytes, filename, _user_id):
+        saved_name = f"test_{filename}"
+        Path(UPLOAD_FOLDER, saved_name).write_bytes(file_bytes)
+        return saved_name
+
+    with patch(
+        "app.service.recipe_import_service._store_image_bytes",
+        side_effect=_save_image_bytes,
+    ), patch(
+        "app.service.importServices.import_recipe.file_has_access_or_download",
+        side_effect=lambda value, **kwargs: value,
+    ):
+        result = commit_recipe_import(
+            household.id,
+            preview["token"],
+            {preview["recipes"][0]["import_id"]: "copy"},
+        )
+
+    assert result["imported"] == 1
+    recipe = _get_recipe(household.id, "Paprika Gnocchi")
+    assert "Boil water." in recipe.description
+    assert len(recipe.items) == 3
+    assert recipe.photo
+    assert _read_uploaded_photo(recipe.photo) == PNG_ONE
+
+
+
 
 
