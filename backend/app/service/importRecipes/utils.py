@@ -28,10 +28,15 @@ def normalize_instruction_step(value: Any) -> str:
 def normalize_int(value: Any) -> int | None:
     if value is None:
         return None
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return None
+    if isinstance(value, (int, float)):
+        return int(round(value))
+    match = re.search(r"\d+", str(value))
+    if match:
+        try:
+            return int(match.group(0))
+        except (TypeError, ValueError):
+            return None
+    return None
 
 
 def _parse_minutes(value: Any) -> int | None:

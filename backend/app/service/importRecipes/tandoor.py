@@ -11,6 +11,7 @@ from app.service.importRecipes.utils import (
     maybe_decode_json_payload,
     normalize_text,
     normalize_instruction_step,
+    normalize_int,
     parse_time,
 )
 from app import app
@@ -28,11 +29,9 @@ def _parse_tandoor_recipe(
     rec["description"] = normalize_text(payload.get("description"))
     rec["source"] = normalize_text(payload.get("source_url") or payload.get("source"))
 
-    servings = payload.get("servings")
-    if isinstance(servings, (int, float)):
-        rec["yields"] = round(servings)
-    else:
-        rec["yields"] = normalize_text(payload.get("servings_text")) or None
+    rec["yields"] = normalize_int(payload.get("servings")) or normalize_int(
+        payload.get("servings_text")
+    )
 
     rec["prep_time"] = parse_time(payload, "working_time")
     rec["cook_time"] = parse_time(payload, "waiting_time")

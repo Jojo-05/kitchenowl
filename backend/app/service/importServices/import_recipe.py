@@ -3,6 +3,7 @@ from typing import Any
 from app.config import db
 from app.models import Recipe, RecipeTags, RecipeItems, Item, Tag
 from app.service.file_has_access_or_download import file_has_access_or_download
+from app.service.importRecipes.utils import normalize_int
 
 
 def _to_reference(value: str) -> str:
@@ -92,7 +93,7 @@ def importRecipe(
     if "prep_time" in args:
         recipe.prep_time = args["prep_time"]
     if "yields" in args:
-        recipe.yields = args["yields"]
+        recipe.yields = normalize_int(args["yields"])
     if "source" in args:
         recipe.source = args["source"]
     if "photo" in args:

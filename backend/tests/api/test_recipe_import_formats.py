@@ -305,3 +305,28 @@ def test_secondary_recipe_photos_not_unused_and_authorized(client):
     assert file2.isUnused() is False
 
 
+def test_recipe_import_yields_sanitized_to_int(client):
+    household = _create_household("Yields Test Household")
+    archive = _make_zip(
+        {
+            "recipe.json": json.dumps(
+                {
+                    "name": "Yields Recipe",
+                    "description": "Recipe with string yields",
+                    "servings": "4 servings",
+                }
+            ).encode("utf-8")
+        }
+    )
+    preview = preview_recipe_import(household.id, archive, "yields.zip")
+    result = commit_recipe_import(
+        household.id,
+        preview["token"],
+        {preview["recipes"][0]["import_id"]: "copy"},
+    )
+    assert result["imported"] == 1
+    recipe = _get_recipe(household.id, "Yields Recipe")
+    assert recipe.yields == 4
+
+
+

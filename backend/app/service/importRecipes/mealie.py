@@ -10,6 +10,7 @@ from app.service.importRecipes.utils import (
     maybe_decode_json_payload,
     normalize_text,
     normalize_id,
+    normalize_int,
     parse_time,
 )
 from app.util.filename_validator import allowed_file
@@ -129,12 +130,9 @@ def parse_mealie_zip(
 
         servings = r.get("recipe_servings")
         if servings is not None:
-            try:
-                recipe["yields"] = int(round(float(servings)))
-            except Exception:
-                recipe["yields"] = None
+            recipe["yields"] = normalize_int(servings)
         else:
-            recipe["yields"] = normalize_text(r.get("recipe_yield"))
+            recipe["yields"] = normalize_int(r.get("recipe_yield"))
 
         # Grab pre-grouped instructions
         steps = instr_by_recipe.get(rid_key, [])
