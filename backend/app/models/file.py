@@ -76,12 +76,16 @@ class File(Model, DbModelAuthorizeMixin):
         db.session.commit()
 
     def isUnused(self) -> bool:
-        return (
-            not self.household
-            and not self.recipe
-            and not self.expense
-            and not self.profile_picture
-        )
+        if self.household or self.recipe or self.expense or self.profile_picture:
+            return False
+        from app.models.recipe import Recipe
+
+        if (
+            Recipe.query.filter(Recipe.photos.contains(self.filename)).first()
+            is not None
+        ):
+            return False
+        return True
 
     def checkAuthorized(
         self, requires_admin: bool = False, household_id: int | None = None
@@ -102,7 +106,19 @@ class File(Model, DbModelAuthorizeMixin):
                 household_id=self.expense.household_id, requires_admin=requires_admin
             )
         else:
-            raise ForbiddenRequest()
+            from app.models.recipe import Recipe
+
+            recipe_with_photo = Recipe.query.filter(
+                Recipe.photos.contains(self.filename)
+            ).first()
+            if recipe_with_photo:
+                if recipe_with_photo.visibility == RecipeVisibility.PRIVATE:
+                    super().checkAuthorized(
+                        household_id=recipe_with_photo.household_id,
+                        requires_admin=requires_admin,
+                    )
+            else:
+                raise ForbiddenRequest()
 
     @classmethod
     def find(cls, filename: str) -> Self | None:

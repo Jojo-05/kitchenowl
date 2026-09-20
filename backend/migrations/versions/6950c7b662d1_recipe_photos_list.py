@@ -17,7 +17,8 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('recipe', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('photos', sa.JSON(), nullable=True))
+        batch_op.add_column(sa.Column('photos', sa.JSON(), nullable=True, server_default='[]'))
+    op.execute(sa.text("UPDATE recipe SET photos = '[]' WHERE photos IS NULL"))
 
 
 def downgrade():

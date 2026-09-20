@@ -285,3 +285,23 @@ def test_recipe_import_progress_tracking_records_individual_updates(client):
         assert any(s.get("imported") == 1 and s.get("skipped") == 1 for s in recorded_states)
         assert any(s.get("imported") == 2 and s.get("skipped") == 1 for s in recorded_states)
 
+
+def test_secondary_recipe_photos_not_unused_and_authorized(client):
+    from app.models import File
+
+    household = _create_household("Photo Test Household")
+    file1 = File(filename="sec_photo1.jpg", created_by=1).save()
+    file2 = File(filename="sec_photo2.jpg", created_by=1).save()
+
+    Recipe(
+        name="Photo Test Recipe",
+        household_id=household.id,
+        description="Testing secondary photos",
+        photo="sec_photo1.jpg",
+        photos=["sec_photo1.jpg", "sec_photo2.jpg"],
+    ).save()
+
+    assert file1.isUnused() is False
+    assert file2.isUnused() is False
+
+
