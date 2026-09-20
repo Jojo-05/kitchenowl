@@ -22,22 +22,49 @@ def _normalize_recipe(raw: dict[str, Any]) -> dict[str, Any] | None:
         or raw.get("directions")
         or raw.get("method")
     )
+
+    def _extract_steps(entry: Any) -> list[str]:
+        if isinstance(entry, dict):
+            nested = entry.get("itemListElement") or entry.get("steps")
+            if isinstance(nested, list):
+                res = []
+                section_name = normalize_text(entry.get("name"))
+                if section_name:
+                    res.append(f"### {section_name}")
+                for sub in nested:
+                    res.extend(_extract_steps(sub))
+                return res
+
+            raw_text = (
+                entry.get("text")
+                or entry.get("instruction")
+                or entry.get("value")
+                or entry.get("description")
+            )
+            text = normalize_instruction_step(raw_text)
+            return [text] if text else []
+        elif isinstance(entry, str):
+            text = normalize_instruction_step(entry)
+            return [text] if text else []
+        return []
+
     if isinstance(instructions, list):
         steps = []
         for entry in instructions:
-            raw_text = (
-                entry.get("text") or entry.get("instruction") or entry.get("value")
-                if isinstance(entry, dict)
-                else entry
-            )
-            text = normalize_instruction_step(raw_text)
-            if text:
-                steps.append(text)
+            steps.extend(_extract_steps(entry))
 
         if steps:
+            formatted_steps = []
+            idx = 1
+            for step in steps:
+                if step.startswith("### "):
+                    formatted_steps.append(f"\n{step}")
+                else:
+                    formatted_steps.append(f"{idx}. {step}")
+                    idx += 1
             description = (description + "\n\n" if description else "") + "\n".join(
-                f"{idx + 1}. {step}" for idx, step in enumerate(steps)
-            )
+                formatted_steps
+            ).strip()
     else:
         instructions_text = normalize_text(instructions)
         if instructions_text:
@@ -90,9 +117,27 @@ def _normalize_recipe(raw: dict[str, Any]) -> dict[str, Any] | None:
         raw.get("tags") or raw.get("categories") or raw.get("recipeCategory") or []
     )
     if isinstance(raw_tags, str):
-        raw_tags = [t.strip() for t in raw_tags.split(",")]
+        raw_tags = [t.strip() for t in raw_tags.split(",") if t.strip()]
+    elif isinstance(raw_tags, dict):
+        raw_tags = [raw_tags]
+    elif not isinstance(raw_tags, list):
+        raw_tags = [raw_tags] if raw_tags else []
 
-    tags = [normalize_text(tag) for tag in raw_tags if normalize_text(tag)]
+    def _extract_tag_name(val: Any) -> str:
+        if isinstance(val, dict):
+            return normalize_text(
+                val.get("name")
+                or val.get("title")
+                or val.get("tag")
+                or val.get("value")
+            )
+        return normalize_text(val)
+
+    tags = []
+    for tag in raw_tags:
+        tag_name = _extract_tag_name(tag)
+        if tag_name and tag_name not in tags:
+            tags.append(tag_name)
     if tags:
         recipe["tags"] = tags
 

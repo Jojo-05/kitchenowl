@@ -423,6 +423,50 @@ def test_recipe_import_duration_formats(client):
     assert _parse_minutes(35) == 35
 
 
+def test_recipe_import_howto_sections_and_object_tags(client):
+    from app.service.importRecipes.json import json_extract_recipes
+
+    raw = {
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "name": "Sectioned Soup",
+        "recipeInstructions": [
+            {
+                "@type": "HowToSection",
+                "name": "Preparation",
+                "itemListElement": [
+                    {"@type": "HowToStep", "text": "Chop onions and garlic."},
+                    {"@type": "HowToStep", "text": "Peel potatoes."},
+                ],
+            },
+            {
+                "@type": "HowToSection",
+                "name": "Cooking",
+                "itemListElement": [
+                    {"@type": "HowToStep", "text": "Simmer everything for 20 minutes."}
+                ],
+            },
+        ],
+        "tags": [
+            {"name": "Soup"},
+            {"name": "Comfort Food"},
+            {"name": "Soup"},
+        ],
+    }
+
+    recipes = json_extract_recipes(raw)
+    assert len(recipes) == 1
+    rec = recipes[0]
+    assert rec["name"] == "Sectioned Soup"
+    assert "### Preparation" in rec["description"]
+    assert "1. Chop onions and garlic." in rec["description"]
+    assert "2. Peel potatoes." in rec["description"]
+    assert "### Cooking" in rec["description"]
+    assert "3. Simmer everything for 20 minutes." in rec["description"]
+    assert rec["tags"] == ["Soup", "Comfort Food"]
+
+
+
 
 
 
